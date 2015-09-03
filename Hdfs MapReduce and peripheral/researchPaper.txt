@@ -1,0 +1,144 @@
+                                                  Problem statement :
+ 
+>After achieving the parallelism in mapper phase why do we generally see our reducers chocking ? 
+>Why does it get stuck at 67% and 92% after a fast completion of mapper phase ? 
+>Why does it happen that while doing population count , reducer meant for a big state like U.P keeps running
+after even though all reducers have run keeping other reducers idle and job still running ? 
+
+
+Solution and extended analysis :
+
+Part 1( pre-requisite knowledge/brush up for solution)
+
+Before we start reading i would like to highlight few concepts of MR life cycle which helps you understand 
+that if you are trying to achieve parallelism with the help of reducers/partitions , then where and how is 
+the code running.
+
+Taking into consideration only of default partitioner , first of all mapper processes an input split ( input
+splits are created by InputFormat or say Hadoop Framework ) . We never worry for achieving parallelism at mapper
+level as framework does it all for us.
+
+Map function processes every record and produces key and value as output . The intermediate map outputs are stored
+on the hard disc of the machines where the mapper code has executed.
+
+There is a partitioning logic which runs after map phase and before reduce task (This happens as a part of the mapper code).
+The default partitioner does a modulo 
+function over the hashcode of the key (output key of the mapper) by the number of configured reducers and the integer 
+value returned is the partition number allotted to the key . 
+In equation : partionNumber = key % (number of configured reducers)
+
+Issue is parallelism in MR code can be achieved by smart selection of keys and ensuring different partitions . Simply 
+configuring the number of reducer tasks is only the number of jvm slots that you reserve for your job for reducer tasks.
+But task attempts will solely depend upon how many partitions you have because one reducer processes one partition . If you
+have one partition and if you have configured 20 reducer slots , it's just wasting resource.
+
+As a general information , one reducer task first of all makes a partition in the machine where that reducer is running and then
+collates the keys and value combination from intermediate outputs/mapper outputs from across all the mapper machines throughout 
+the cluster. Once it gets all keys and it's data under that partition , it starts to run the reduce logic taking each key at a time.
+All the keys in a partition are sorted . Also please note that the intermediate key,value output created by a mapper on the same 
+machine is also sorted by key although this piece of information is not going to be used in this paper.
+
+(the partition on the machine where the reducer is runing is having the keys sorted)
+ * (the parition on the macine where the intermediate mapper outputs were stored in a partition are sorted or not has to be explored by experimentation
+
+
+It should be know that number of configured mappers even if is 10 but there are 20 input splits , then 20 mappers will be spawned.
+Also if there are ten partitions in your code but if number of reducer configured are one , then all will go to one reducer and in such
+cases there are two problems . One parallelism couldn't be achieved and other is there is going to be a possible out of memory error
+if that jvm instance/reducer task couldn't handle all the key and associated values.
+
+Part 2 ( How to write the number of configured reducers for the job  ? )
+
+job.setNumberOfReduceTasks() is the api which should be used to configure the number  of reducers to the job.
+It should be ideally equal to the number of partitions that you have created in your code . 
+
+Part 3 ( How to write custom partitioner in your MR code rather than relying on default hash partitioner when you know or foresee single reducer problem  ? )
+
+The idea here is if all the things were going to a single reducer ( because there was a single partition ) , we now want to create multiple
+partitions so that multiple reducers may run. Add this class to you Mapper java file . 
+
+
+// custom partitioner case 1
+
+Suppose there were 100 digits from 1 to 100 as key , then 
+you din't want all 1 to 100 keys should go to single reducer.
+So , the below code will partition it into four quarters . 
+Let's now configure four reducers which is numReduceTasks here.
+Assuming that the number of configured reducers are four.
+
+class CustomPartitioner extends Partitioner<Text, Text> 
+{
+   public int getPartition(Text key, Text value,int numReduceTasks)
+   {
+       if(Integer.parseInt(key.toString())<25)
+	   {
+	    return (1 % numReduceTasks; // it will return you 1 which is partition number : 1
+	   }
+	   
+	    if(Integer.parseInt(key.toString())>25&Integer.parseInt(key.toString())<50)
+	   {
+	    return (2 % numReduceTasks; // it will return you 2 which is partition number : 2
+	   }
+	   
+	    if(Integer.parseInt(key.toString())>50&Integer.parseInt(key.toString())<75)
+	   {
+	    return (3 % numReduceTasks; // it will return you 3 which is partition number : 3
+	   }
+	   
+	    if(Integer.parseInt(key.toString())>75&Integer.parseInt(key.toString())<100)
+	   {
+	    return (4 % numReduceTasks; // it will return you 0 which is partition number : 0
+	   }
+	   
+   }
+} 
+
+So now in the above case , there are four partitions and number of configured reducers are four , so 
+it will run four reducers . 
+
+// custom partitioner case 2 
+At times it happens that you are short of ideas how to partition your data , may be some one
+just tells you to sum up data of a column which is very big and will end up in a reducer.
+So if there are digits , then at first place there can be ten distinct digits which can be captured as paritions
+assuming data is big and covers all those cases.
+
+class CustomPartitioner extends Partitioner<Text, Text> 
+{
+   public int getPartition(Text key, Text value,int numReduceTasks)
+   {
+       return (key.toString().charAt(0)) % numReduceTasks; // so it will return 0,1,2,3,4,5,6,7,8,9
+   }
+} 
+
+this will create ten partitions and summation code will run in those ten partitions now . After that 
+you can run a script to read those part files, read the value and show the sum.
+
+
+// custom partitioner case 3
+At times it happens that you are short of ideas how to partition your data , may be some one
+just tells you to sum up data of a column which is very big and will end up in a reducer.
+So if there are digits , then at first place and second place combined there can be nC2 distinct digits 
+which can be captured as partitions assuming data is big and covers all those cases.
+
+class CustomPartitioner extends Partitioner<Text, Text> 
+{
+   public int getPartition(Text key, Text value,int numReduceTasks)
+   {
+       return ((key.toString().charAt(0))+(key.toString().charAt(1))) % numReduceTasks; // so it will return 06,71,32,34,46,51,64,73,88,91
+   }
+} 
+
+this will create nC2 partitions and summation code will run in those nC2 partitions now . After that 
+you can run a script to read those part files, read the value and show the sum.
+
+
+// algo for custom partition case 4
+
+Suppose you were doing a country count state wise and you get stuck 
+at a big poplulation state like U.P . What appraoch should be taken.
+
+step 1. load all the zila ( sort of geographical unit of state ) in a distributed cache file.
+step 2. Write custom partitoner code as written above and iterate over all the zila from the file loaded in task tracker.
+step 3. If the key ( say UID )contains zila name , then check for if it matches with the loaded file and then do hash code of the zila name 
+        % number of configured reducers . It will run as many reducers as many zila are there in the state. 
+        
