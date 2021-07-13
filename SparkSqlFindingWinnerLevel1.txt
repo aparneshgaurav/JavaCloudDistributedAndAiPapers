@@ -1,0 +1,172 @@
+"""
+Problem Statement:
+Tom and jerry are playing a game with all thier friends. The one who will score maximun wins the game and in reward wil get a piece of cake, but the problem is they dont know how to create a score table in SparkSql. They need your help to create a data frame and store their scores with their names respectively. Find the max score from the table using SparkSql queries and announce the winner
+"""
+
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("FindingWinner")
+sc = SparkContext(conf=conf)
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder \
+          .appName("FindingWinner") \
+          .getOrCreate()
+
+data = [('Tom','Cat','M',91),
+  ('Toodles','Galore','F',45),
+  ('Spike','Bulldog','M',88),
+  ('Jerry','Mouse','M',64),
+  ('Butch','Cat','M',86),
+  ('Muscles','Mouse','M',54),
+  ('Quacker','Duck','M',78),
+  ('Nibbles','winie','F',41),
+  ('Jennie','Mouse','M',52),
+  ('Topsy','Cat','M',23),
+  ('Toots','Cat','F',51),
+]
+rdd = sc.parallelize(data)
+
+print("Yippie!! you have successfully colleted all the players name with their respective scores")
+print(rdd.collect())
+
+columns = ["Firstname","Middlename","Gender","Score"]
+df = spark.createDataFrame(data=data, schema = columns)
+
+print("\nScore Board")
+print(df.show())
+
+print(df.printSchema())
+
+df.createOrReplaceTempView("Score_Table")
+print("Voila, Score Board is ready")
+df2 = spark.sql("SELECT * from Score_Table")
+print(df2.show())
+
+print("\nPlayers names with their respective scores")
+groupDF = spark.sql("SELECT Firstname,Score from Score_Table")
+print(groupDF.show())
+
+print("Tom and jerry are so close to find a winner, help them do this")
+score = spark.sql("SELECT Score from Score_Table")
+print(score.show())
+
+print("Wohoo! we have found the winner together")
+winner = spark.sql("SELECT * FROM Score_Table WHERE Score = (SELECT max(Score) FROM Score_Table)")
+winner.show()
+print("Cleary Tom is the winner with maximum score, now he can enjoy the peice of cake:)\n")
+
+"""
+Output:
+
+Yippie!! you have successfully colleted all the players name with their respective scores
+Out[4]: [('Tom', 'Cat', 'M', 91),
+ ('Toodles', 'Galore', 'F', 45),
+ ('Spike', 'Bulldog', 'M', 88),
+ ('Jerry', 'Mouse', 'M', 64),
+ ('Butch', 'Cat', 'M', 81),
+ ('Jerry', 'Mouse', 'M', 62),
+ ('Butch', 'Cat', 'M', 86),
+ ('Muscles', 'Mouse', 'M', 54),
+ ('Quacker', 'Duck', 'M', 78),
+ ('Nibbles', 'winie', 'F', 41),
+ ('Jennie', 'Mouse', 'M', 52),
+ ('Topsy', 'Cat', 'M', 23),
+ ('Toots', 'Cat', 'F', 51)]
+
+df:pyspark.sql.dataframe.DataFrame = [Firstname: string, Middlename: string ... 2 more fields]
+
+Score Board
++---------+----------+------+-----+
+|Firstname|Middlename|Gender|Score|
++---------+----------+------+-----+
+|      Tom|       Cat|     M|   91|
+|  Toodles|    Galore|     F|   45|
+|    Spike|   Bulldog|     M|   88|
+|    Jerry|     Mouse|     M|   64|
+|    Butch|       Cat|     M|   81|
+|    Jerry|     Mouse|     M|   62|
+|    Butch|       Cat|     M|   86|
+|  Muscles|     Mouse|     M|   54|
+|  Quacker|      Duck|     M|   78|
+|  Nibbles|     winie|     F|   41|
+|   Jennie|     Mouse|     M|   52|
+|    Topsy|       Cat|     M|   23|
+|    Toots|       Cat|     F|   51|
++---------+----------+------+-----+
+
+
+root
+ |-- Firstname: string (nullable = true)
+ |-- Middlename: string (nullable = true)
+ |-- Gender: string (nullable = true)
+ |-- Score: long (nullable = true)
+
+Voila, Score Board is ready
++---------+----------+------+-----+
+|Firstname|Middlename|Gender|Score|
++---------+----------+------+-----+
+|      Tom|       Cat|     M|   91|
+|  Toodles|    Galore|     F|   45|
+|    Spike|   Bulldog|     M|   88|
+|    Jerry|     Mouse|     M|   64|
+|    Butch|       Cat|     M|   81|
+|    Jerry|     Mouse|     M|   62|
+|    Butch|       Cat|     M|   86|
+|  Muscles|     Mouse|     M|   54|
+|  Quacker|      Duck|     M|   78|
+|  Nibbles|     winie|     F|   41|
+|   Jennie|     Mouse|     M|   52|
+|    Topsy|       Cat|     M|   23|
+|    Toots|       Cat|     F|   51|
++---------+----------+------+-----+
+
+Players names with their respective scores
++---------+-----+
+|Firstname|Score|
++---------+-----+
+|      Tom|   91|
+|  Toodles|   45|
+|    Spike|   88|
+|    Jerry|   64|
+|    Butch|   81|
+|    Jerry|   62|
+|    Butch|   86|
+|  Muscles|   54|
+|  Quacker|   78|
+|  Nibbles|   41|
+|   Jennie|   52|
+|    Topsy|   23|
+|    Toots|   51|
++---------+-----+
+
+Tom and jerry are so close to find a winner, help them do this
++-----+
+|Score|
++-----+
+|   91|
+|   45|
+|   88|
+|   64|
+|   81|
+|   62|
+|   86|
+|   54|
+|   78|
+|   41|
+|   52|
+|   23|
+|   51|
++-----+
+
+
+Wohoo! we have found the winner together
++---------+----------+------+-----+
+|Firstname|Middlename|Gender|Score|
++---------+----------+------+-----+
+|      Tom|       Cat|     M|   91|
++---------+----------+------+-----+
+
+Cleary Tom is the winner with maximum score, now he can enjoy the peice of cake:)
+
+"""

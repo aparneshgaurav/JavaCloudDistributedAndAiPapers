@@ -1,0 +1,40 @@
+"""
+Problem Statement:
+Tom and Jerry want to learn new things. So they mutually decided to hire a teacher who taught them new technologies like a spark.
+The Teacher gives homework to Tom and jerry. Tom has to find that the word contains a specific letter given by the teacher or not. And Jerry has to find the occurrence of the letter in the word.
+Word = "cheese"
+letter = 'e'
+Please help Tom and Jerry in completing their homework.
+
+Concept - https://www.rani.ai/library/lakshayvasuja/bigDataHelpLine/Letter-present-in-word-.-@lakshayvasuja
+
+"""
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("FindLetter")
+sc = SparkContext(conf=conf)
+word = "cheese"
+letter = 'e'
+rdd = sc.parallelize(word)
+check = rdd.filter(lambda x: letter in x)
+if(check.count() > 0):
+  print("Tom Answered:")
+  print("Yes the word",word,"contains letter" ,letter)
+else:
+  print("Tom Answered:")
+  print("NO",word,"doesn't contains" ,letter ,"letter") 
+
+print("Jerry Answered:")
+print("Occurrence of",letter,"is:",check.count())
+print("Teacher: Bravo You both are my brilliant students")
+
+"""
+Output:
+Tom Answered:
+Yes the word cheese contains letter e
+Jerry Answered:
+Occurrence of e is: 3
+Teacher: Bravo You both are my brilliant students
+"""
+
+

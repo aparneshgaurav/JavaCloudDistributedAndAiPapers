@@ -1,0 +1,42 @@
+"""
+Problem Statement:
+Tom has to do analysis on data using spark but he is having short-term memory loss disorder. So he is worried about how they will proceed with the task but then Jerry comes up with a solution and introduces the concept of RDD Persistence to Tom with help of persist and cache function now tom can easily store the last processed data in the cache memory. So can you please help tom implementing these functions on the data? 
+"""
+
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("RDDPersistence")
+sc = SparkContext(conf=conf)
+
+dataset = ['car','bike','apple','cycle','apple','banana']
+rdd = sc.parallelize(dataset)
+print(rdd.collect())
+
+# Use of cache funtion
+b=rdd.map(lambda x: x.upper( ))
+print(b.cache())
+print(b.is_cached)
+
+#Use of persist function
+word =b.map(lambda x:(x,1))\
+        .reduceByKey(lambda x,y : (x+y))
+print(word.collect())
+print(word.persist())
+print(word.is_cached)
+
+#Free the cache memory using the unpersist function.
+print(b.unpersist())
+print(b.is_cached)
+
+"""
+Output:
+['car', 'bike', 'apple', 'cycle', 'apple', 'banana']
+PythonRDD[9] at RDD at PythonRDD.scala:58
+True
+[('BIKE', 1), ('CYCLE', 1), ('CAR', 1), ('APPLE', 2), ('BANANA', 1)]
+Out[25]: PythonRDD[22] at collect at <command-1394467589348515>:3
+True
+False
+"""
+
+

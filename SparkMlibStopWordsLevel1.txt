@@ -1,0 +1,67 @@
+"""
+Problem Statement:
+Tom and Jerry challenged their neighbor for a crossword game. But there is one constraint they don't have to make the words that are stopwords. So you have to help Tom and Jerry in identifying the stopwords before they lose their points. 
+
+Concept: https://www.rani.ai/library/lakshayvasuja/MLHelpLine/Removing-Stopping-Words-.-@lakshayvasuja
+"""
+
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("StopWords")
+sc = SparkContext(conf=conf)
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder \
+          .appName("RemovingStopWords") \
+          .getOrCreate()
+
+from pyspark.ml.feature import Tokenizer, RegexTokenizer
+from pyspark.sql.functions import col, udf
+from pyspark.sql.types import IntegerType
+from pyspark.ml.feature import StopWordsRemover
+
+sentenceDataFrame = spark.createDataFrame([
+    (0, "Tom How are You"),
+    (1, "Jerry I am fine What about you"),
+    (2, "I am fine Too")
+], ["id", "sentence"])
+
+tokenizer = Tokenizer(inputCol="sentence", outputCol="words")
+regexTokenizer = RegexTokenizer(inputCol="sentence", outputCol="words", pattern="\\W")
+countTokens = udf(lambda words: len(words), IntegerType())
+regexTokenized = regexTokenizer.transform(sentenceDataFrame)
+print(regexTokenized.select("sentence", "words") \
+    .withColumn("tokens", countTokens(col("words"))).show(truncate=False))
+
+remover = StopWordsRemover(inputCol="words", outputCol="filtered")
+print(remover.transform(regexTokenized).show(truncate=False))
+print("Jerry: Tom we did it")
+
+"""
+Output:
+
+sentenceDataFrame:pyspark.sql.dataframe.DataFrame = [id: long, sentence: string]
+regexTokenized:pyspark.sql.dataframe.DataFrame = [id: long, sentence: string ... 1 more fields]
++------------------------------+--------------------------------------+------+
+|sentence                      |words                                 |tokens|
++------------------------------+--------------------------------------+------+
+|Tom How are You               |[tom, how, are, you]                  |4     |
+|Jerry I am fine What about you|[jerry, i, am, fine, what, about, you]|7     |
+|I am fine Too                 |[i, am, fine, too]                    |4     |
++------------------------------+--------------------------------------+------+
+
++---+------------------------------+--------------------------------------+-------------+
+|id |sentence                      |words                                 |filtered     |
++---+------------------------------+--------------------------------------+-------------+
+|0  |Tom How are You               |[tom, how, are, you]                  |[tom]        |
+|1  |Jerry I am fine What about you|[jerry, i, am, fine, what, about, you]|[jerry, fine]|
+|2  |I am fine Too                 |[i, am, fine, too]                    |[fine]       |
++---+------------------------------+--------------------------------------+-------------+
+
+Jerry: Tom we did it
+"""
+
+
+
+
+

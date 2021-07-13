@@ -1,0 +1,57 @@
+"""
+Problem Statement:
+Tom wants to throw a birthday party. So he decided to make a list of persons who he wants to invite with the help of jerry because jerry knew everything.
+So can you please help Tom and Jerry in making the invitation list using spark SQL queries?
+
+#Concept: https://www.rani.ai/library/lakshayvasuja/hive/CRUD-in-HQL-.-@lakshayvasuja
+"""
+
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("Basics")
+sc = SparkContext(conf=conf)
+
+from pyspark.sql import SparkSession
+spark = SparkSession \
+    .builder \
+    .appName("Basics") \
+    .enableHiveSupport() \
+    .getOrCreate()
+
+#Create Table
+spark.sql("CREATE TABLE Person(SrNo int, Name String, Breed String) Using hive")
+
+#Insert Records
+spark.sql("Insert into Person values (1,'Bhalu','Bear'),(2,'Lucy','Cat'),(3,'Tiny','Mouse'),(4,'Bruno','Dog'),(5,'Moski','Cat')")
+print("Tom: Can we add MOMO also in the list")
+print("Jerry: NO")
+
+#Display Records
+print(spark.sql("Select * from Person").show())
+print("Bravo! We Did it")
+
+"""
+Output:
+
+DataFrame[]
+
+Tom: Can we add MOMO also to the list
+Jerry: NO
+
++----+-----+-----+
+|SrNo| Name|Breed|
++----+-----+-----+
+|   1|Bhalu| Bear|
+|   2| Lucy|  Cat|
+|   3| Tiny|Mouse|
+|   4|Bruno|  Dog|
+|   5|Moski|  Cat|
++----+-----+-----+
+
+Bravo! We Did it
+"""
+
+
+
+
+

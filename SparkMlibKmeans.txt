@@ -1,0 +1,43 @@
+"""
+Problem Statment:
+Tom is running behind jerry to catch him but. Due to Tom loses his balance and hit his head in the basket which is full of 3 color blocks and spread all the blocks across the hall. So you have to help Tom in collecting the blocks before his mom sees and punishes him. There is one constraint the basket has three different sections so he has to make three different clusters of blocks according to their color and put them in the basket separately.
+
+#Concept: https://www.rani.ai/library/vedikajaint/ML/k-means-Clustering-.-@vedikajaint
+"""
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("Kmeans")
+sc = SparkContext(conf=conf)
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder\
+        .master("local")\
+        .appName("Kmeans")\
+        .getOrCreate()
+
+from numpy import array
+from math import sqrt
+from pyspark.mllib.clustering import KMeans, KMeansModel
+
+dataset = [[5.1,3.5,1.4,0.2,'setosa'],[4.9,3,1.4,0.2,'setosa'],[4.7,3.2,1.3,0.2,'setosa'],[4.6,3.1,1.5,0.2,'setosa'],[5,3.6,1.4,0.2,'setosa'],[5.4,3.9,1.7,0.4,'setosa'],[4.6,3.4,1.4,0.3,'setosa'],[5,3.4,1.5,0.2,'setosa'],[4.4,2.9,1.4,0.2,'setosa'],[4.9,3.1,1.5,0.1,'setosa'],[7,3.2,4.7,1.4,'versicolor'],[6.4,3.2,4.5,1.5,'versicolor'],[6.3,3.3,6,2.5,'virginica'],[6.3,2.9,5.6,1.8,'virginica']]
+data = sc.parallelize(dataset)
+data.collect()
+
+parameters = data.map(lambda x: array([float(x[0]),float(x[1]),float(x[2]),float(x[3])]))
+parameters.collect()
+
+def error(point):
+  center = clusters.centers[clusters.predict(point)]
+  return sqrt(sum([x**2 for x in (point-center)]))
+
+for i in range(1,4):
+  clusters = KMeans.train(parameters,4,maxIterations=100,initializationMode="random")
+  WSSSE = (parameters.map(lambda point: error(point)).reduce(lambda x,y: x+y))
+  print("With"+str(i)+"cluster : Within set sum of squared error ="+str(WSSSE))
+
+"""
+Output:
+With1cluster: Within set sum of squared error =5.3742457563420585
+With2cluster: Within set sum of squared error =5.659173268832583
+With3cluster: Within set sum of squared error =5.25494718159145
+"""

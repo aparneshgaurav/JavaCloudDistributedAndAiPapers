@@ -1,0 +1,62 @@
+"""
+Problem Statement:
+Tom and Jerry are really tired of fighting, so they decided to call their friends to play with them. Now, they have to make different teams to play the game, but they are not good in partitioning so will you help them in dividing the team using Spark partitioning.
+"""
+
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("LongestLength")
+sc = SparkContext(conf=conf)
+
+data = ['Tom','Toodles','Spike','Jerry','Butch','Jerry','Butch','Muscles','Quacker','Nibbles','Jennie','Topsy','Toots']
+rdd = sc.parallelize(data)
+
+print("These are the total no. of players help them to form differnet teams")
+print(rdd.collect())
+print("\nTom and Jerry wants 4 teams for their team, help them doing so.\n")
+
+teams = sc.parallelize(data,4)
+print("\nNo. of Teams {}".format(teams.getNumPartitions()))
+print("Yieppe!! you helped them in making 4 teams")
+print("Here are the teams four teams formed:\n {}".format(teams.glom().collect()))
+
+print("\nHere are the finals teams\n")
+count=1
+for team in teams.glom().collect():
+  print("Team {} : {}".format(count,team))
+  count +=1
+print("\nNow all of them can play, cheers!")
+
+
+"""
+ Output:
+
+These are the total no. of players help them to form differnet teams
+ ['Tom',
+ 'Toodles',
+ 'Spike',
+ 'Jerry',
+ 'Butch',
+ 'Jerry',
+ 'Butch',
+ 'Muscles',
+ 'Quacker',
+ 'Nibbles',
+ 'Jennie',
+ 'Topsy',
+ 'Toots']
+ 
+Tom and Jerry wants 4 teams for their team, help them doing so.
+
+No. of Teams 4
+Yieppe!! you helped them in making 4 teams
+Here are the teams four teams formed:
+[['Tom', 'Toodles', 'Spike'], ['Jerry', 'Butch', 'Jerry'], ['Butch', 'Muscles', 'Quacker'], ['Nibbles', 'Jennie', 'Topsy', 'Toots']]
+
+Here are the finals teams
+Team 1 : ['Tom', 'Toodles', 'Spike']
+Team 2 : ['Jerry', 'Butch', 'Jerry']
+Team 3 : ['Butch', 'Muscles', 'Quacker']
+Team 4 : ['Nibbles', 'Jennie', 'Topsy', 'Toots']
+Now all of them can play, cheers!
+"""

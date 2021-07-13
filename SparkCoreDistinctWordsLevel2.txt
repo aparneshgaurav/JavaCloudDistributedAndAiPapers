@@ -1,0 +1,37 @@
+"""
+Problem Statement:
+Jerry tries to steal food from the Refrigerator but Tom is smart enough they set up a 6 digit long passcode lock on the refrigerator. So to get the food you have to help little jerry to crack that code.
+Tom hides some numbers in the kitchen so jerry just has to find all of them and calculate the frequency of each number and apply for that calculated number on the lock-in in decreasing order.
+The numbers hide by Tom in the kitchen area in the array data[].
+
+Concept:https://www.rani.ai/library/lakshayvasuja/bigDataHelpLine/Calculating-Frequency-.-@lakshayvasuja
+"""
+
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("CalculatingFrequency")
+sc = SparkContext(conf=conf)
+
+data = [1,1,2,2,4,2,4,2,3,4,4,3,2,1,5]
+rdd =  sc.parallelize(data)
+rdd1 = rdd.map(lambda x: (x,1))
+rdd2 = rdd1.reduceByKey(lambda x,y:(x+y))
+print("Output: (Number , Frequency)")
+print(rdd2.collect())
+print(rdd2.values().collect())
+print("Bravo! You crack it")
+print("Jerry: This food is very tasty")
+
+"""
+Output:
+Output: (Number, Frequency)
+[(2, 5), (4, 4), (1, 3), (3, 2), (5, 1)]
+Code is: [5, 4, 3, 2, 1]
+Bravo! You crack it
+Jerry: This food is very tasty
+"""
+
+
+
+
+

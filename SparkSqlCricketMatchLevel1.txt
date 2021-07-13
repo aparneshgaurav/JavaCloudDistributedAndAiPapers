@@ -1,0 +1,140 @@
+"""
+Problem Statement:
+Tom and Jerry have to decide to play a Cricket match by making their own teams. You as Umpire have to decide who will be the winner of this match and also find some relevant information from this data.
+
+Concept1: https://www.rani.ai/library/lakshayvasuja/hive/Operators-in-Hive-.-@lakshayvasuja
+Concept2: https://www.rani.ai/library/lakshayvasuja/hive/Function-in-Hive-.-@lakshayvasuja
+"""
+
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("CricketMatch")
+sc = SparkContext(conf=conf)
+
+from pyspark.sql import SparkSession
+spark = SparkSession \
+    .builder \
+    .appName("CricketMatch") \
+    .enableHiveSupport() \
+    .getOrCreate()
+
+#Drop tables 
+spark.sql("Drop table TeamTom")
+spark.sql("Drop table TeamJerry")
+
+#Create Tom's Team
+spark.sql("CREATE TABLE IF NOT EXISTS TeamTom (Pid int, Name String, Type String, RunsScored int, BallsUsed int) Using hive")
+
+#Create Jerry's Team
+spark.sql("CREATE TABLE IF NOT EXISTS TeamJerry (Pid int, Name String, Type String, RunsScored int, BallsUsed int) Using hive")
+
+#Show Teams
+print(spark.sql("show tables").show())
+
+#Insert Data
+spark.sql("Insert into TeamTom values(1,'Tom','Batsman',30,20),(2,'Lucy','Batsman',10,5),(3,'Moski','All-Rounder',15,10),(4,'Momo','Bowler',2,5),(5,'Cruze','Bowler',10,8)")
+
+#Display Tom's Team
+print(spark.sql("Select * from TeamTom").show())
+
+#Insert Data
+spark.sql("Insert into TeamJerry values(1,'Jerry','Batsman',40,15),(2,'Joey','Batsman',12,5),(3,'Bhalu','All-Rounder',10,7),(4,'Cherry','Bowler',8,5),(5,'Coca','Bowler',15,10)")
+
+#Display Jerry's Team
+print(spark.sql("Select * from TeamJerry").show())
+
+#Wining Team Evaluation
+print(spark.sql("Select sum(RunsScored) AS TomTeamRuns from TeamTom").show())
+print(spark.sql("Select sum(RunsScored) AS JerryTeamRuns from TeamJerry").show())
+print("Umpire Decision: Jerry's Team win the match")
+print("Jerry: Hurray!")
+
+#Maximum RunsScored in Tom's Team
+print(spark.sql("Select * from TeamTom where RunsScored = (Select max(RunsScored) from TeamTom)").show())
+
+#Scored Max Run And Take Less Balls in Jerry's Team
+print(spark.sql("Select * from TeamJerry where (RunsScored-BallsUsed) = (Select min(RunsScored-BallsUsed) from TeamJerry)").show())
+print("Both have a difference of 3 places between he scored and played bowls")
+
+#Greater than or Less than Operator
+print(spark.sql("Select * from TeamTom where RunsScored > 10 And BallsUsed < 30").show())
+
+"""
+Output:
+
+DataFrame[]
+
+DataFrame[]
+
++-------------+---------+-----------+
+|     database|tableName|isTemporary|
++-------------+---------+-----------+
+|cricket_match|teamjerry|      false|
+|cricket_match|  teamtom|      false|
++-------------+---------+-----------+
+
+DataFrame[]
+
++---+-----+-----------+----------+---------+
+|Pid| Name|       Type|RunsScored|BallsUsed|
++---+-----+-----------+----------+---------+
+|  1|  Tom|    Batsman|        30|       20|
+|  2| Lucy|    Batsman|        10|        5|
+|  3|Moski|All-Rounder|        15|       10|
+|  4| Momo|     Bowler|         2|        5|
+|  5|Cruze|     Bowler|        10|        8|
++---+-----+-----------+----------+---------+
+
+DataFrame[]
+
++---+------+-----------+----------+---------+
+|Pid|  Name|       Type|RunsScored|BallsUsed|
++---+------+-----------+----------+---------+
+|  1| Jerry|    Batsman|        40|       15|
+|  2|  Joey|    Batsman|        12|        5|
+|  3| Bhalu|All-Rounder|        10|        7|
+|  4|Cherry|     Bowler|         8|        5|
+|  5|  Coca|     Bowler|        15|       10|
++---+------+-----------+----------+---------+
+
++-----------+
+|TomTeamRuns|
++-----------+
+|         67|
++-----------+
+
+None
++-------------+
+|JerryTeamRuns|
++-------------+
+|           85|
++-------------+
+
+None
+Umpire Decision: Jerry's Team win the match
+Jerry: Hurray!
+
++---+----+-------+----------+---------+
+|Pid|Name|   Type|RunsScored|BallsUsed|
++---+----+-------+----------+---------+
+|  1| Tom|Batsman|        30|       20|
++---+----+-------+----------+---------+
+
++---+------+-----------+----------+---------+
+|Pid|  Name|       Type|RunsScored|BallsUsed|
++---+------+-----------+----------+---------+
+|  3| Bhalu|All-Rounder|        10|        7|
+|  4|Cherry|     Bowler|         8|        5|
++---+------+-----------+----------+---------+
+
+Both have a difference of 3 places between he scored and played bowls
+
++---+-----+-----------+----------+---------+
+|Pid| Name|       Type|RunsScored|BallsUsed|
++---+-----+-----------+----------+---------+
+|  1|  Tom|    Batsman|        30|       20|
+|  3|Moski|All-Rounder|        15|       10|
++---+-----+-----------+----------+---------+
+"""
+
+

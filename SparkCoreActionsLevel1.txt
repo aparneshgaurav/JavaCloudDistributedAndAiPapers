@@ -1,0 +1,54 @@
+"""
+Problem Statement:
+Tom is running behind jerry to catch him. Because of jerry's small size, they entered into a puzzle from the small hole but to catch him now tom has to solve that puzzle.
+Please help him in getting jerry.
+The puzzle consists of five phases to clear all these phases Tom has to write five actions of Spark core.
+
+#Concept:https://www.rani.ai/library/lakshayvasuja/bigDataHelpLine/Actions-in-Spark-.-@lakshayvasuja
+"""
+
+#Code
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("Actions")
+sc = SparkContext(conf=conf)
+print("Well done! you cleared the level one")
+data = [1,2,3,4,5,6]
+rdd = sc.parallelize(data)
+print(rdd.count())
+
+#Display all the elements 
+print("Jerry I am coming")
+print(rdd.collect())
+
+#Display the first element
+print(rdd.first())
+
+#Reduce 
+print("Time to tackle difficult challenge, jerry laughs")
+print(rdd.reduce(lambda x, y: x + y))
+
+#Display first 3 element
+print("Jerry today you have a bad day")
+print(rdd.take(3))
+
+"""
+Output:
+
+Well done! you cleared the level one
+6
+
+Jerry, I am coming
+[1, 2, 3, 4, 5, 6]
+
+1
+
+Time to tackle the difficult challenge, jerry laughs
+21
+
+Jerry today you have a bad day
+[1, 2, 3]
+"""
+
+
+
+

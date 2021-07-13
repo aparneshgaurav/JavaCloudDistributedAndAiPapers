@@ -1,0 +1,113 @@
+"""
+Problem Statement:
+At Tom's birthday party a spy has entered. Although Jerry knows about the spy, he is not good at SparkSql so can you please help Jerry in finding and kicking the spy out.
+Spy characteristics are:(He is a cat and his color is white).
+
+#Concept: https://www.rani.ai/library/lakshayvasuja/hive/Function-in-Hive-.-@lakshayvasuja
+"""
+
+#Creating Spark Session
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("CatchSpy")
+sc = SparkContext(conf=conf)
+
+from pyspark.sql import SparkSession
+spark = SparkSession \
+    .builder \
+    .appName("CatchSpy") \
+    .enableHiveSupport() \
+    .getOrCreate()
+
+#Create Table
+spark.sql("CREATE TABLE IF NOT EXISTS Invites (SrNo int, Name String, Breed String, Colour String, Location String) Using hive")
+
+#Insert values
+spark.sql("Truncate Table Invites")
+spark.sql("Insert into Invites values (1,'Bhalu','Bear','Brown','Away'),(2,'Lucy','Cat','Grey','Home'),(3,'Tiny','Mouse','Grey', 'Home'),(4,'Bruno','Dog','Black', 'Away'),(5,'Moski','Cat','white','Away')")
+
+#Display records
+print("Displaying Records:")
+print(spark.sql("Select * from Invites").show())
+
+"""
+Plan to catch spy.
+Tom and Jerry's Conversation where jerry explaining his plan to find the spy.
+He counts the total persons at the party.
+Then he decides to count the total cats in the party.
+Then he decided to find which color is white in them.
+Tom: You are Brilliant Jerry
+"""
+
+#Count
+print("Total members at the party:")
+print(spark.sql("Select count(*) from Invites").show())
+
+#Count total number of cats in party
+print("Total cats in the party:")
+print(spark.sql("Select count(*) from Invites where Breed = 'Cat'").show())
+print("Jerry: Oh I think Lucy is the culprit")
+
+#Display cats record
+print(spark.sql("Select * from Invites where Breed = 'Cat'").show())
+print("We are too close to finding them.")
+
+#Catch the Spy
+print("Spy Identified:")
+print(spark.sql("select * from Invites where Breed = 'Cat' and  Colour = 'white'").show())
+print("Tom He is the spy")
+
+"""
+Plan Successful
+Tom with a broken heart.
+Tom: Moski you are the culprit. You betrayed me.
+Thank You Little Jerry You are so cool.
+
+Output:
+
+DataFrame[]
+
+DataFrame[]
+
++----+-----+-----+------+--------+
+|SrNo| Name|Breed|Colour|Location|
++----+-----+-----+------+--------+
+|   1|Bhalu| Bear| Brown|    Away|
+|   2| Lucy|  Cat|  Grey|    Home|
+|   3| Tiny|Mouse|  Grey|    Home|
+|   4|Bruno|  Dog| Black|    Away|
+|   5|Moski|  Cat| white|    Away|
++----+-----+-----+------+--------+
+
++--------+
+|count(1)|
++--------+
+|       5|
++--------+
+
++--------+
+|count(1)|
++--------+
+|       2|
++--------+
+
+Jerry: Oh I think Lucy is the culprit
+
++----+-----+-----+------+--------+
+|SrNo| Name|Breed|Colour|Location|
++----+-----+-----+------+--------+
+|   2| Lucy|  Cat|  Grey|    Home|
+|   5|Moski|  Cat| white|    Away|
++----+-----+-----+------+--------+
+
+We are too close to finding them.
+
++----+-----+-----+------+--------+
+|SrNo| Name|Breed|Colour|Location|
++----+-----+-----+------+--------+
+|   5|Moski|  Cat| white|    Away|
++----+-----+-----+------+--------+
+
+Tom He is the spy
+"""
+
+
